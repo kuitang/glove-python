@@ -13,8 +13,8 @@ except:
 
 # Use gcc for openMP on OSX
 if 'darwin' in platform.platform().lower():
-    os.environ["CC"] = "gcc-4.9"
-    os.environ["CXX"] = "g++-4.9"
+    os.environ["CC"] = "gcc-5"
+    os.environ["CXX"] = "g++-5"
 
 
 # Declare extension
