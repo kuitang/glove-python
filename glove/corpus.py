@@ -40,7 +40,7 @@ class Corpus(object):
         if np.min(list(dictionary.values())) != 0:
             raise Exception('Dictionary ids should start at zero')
 
-    def fit(self, corpus, window=10, max_map_size=1000, ignore_missing=False):
+    def fit(self, corpus, window=10, max_map_size=1000, ignore_missing=False, symmetric=False):
         """
         Perform a pass through the corpus to construct
         the cooccurrence matrix. 
@@ -60,6 +60,7 @@ class Corpus(object):
                                even if out-of-vocabulary words are
                                ignored.
                                If False, a KeyError is raised.
+        - bool symmetric
         """
         
         self.matrix = construct_cooccurrence_matrix(corpus,
@@ -67,7 +68,8 @@ class Corpus(object):
                                                     int(self.dictionary_supplied),
                                                     int(window),
                                                     int(ignore_missing),
-                                                    max_map_size)
+                                                    max_map_size,
+                                                    int(symmetric))
 
     def save(self, filename):
         

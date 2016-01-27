@@ -16,6 +16,7 @@ from libcpp.vector cimport vector
 
 cdef inline int int_min(int a, int b): return a if a <= b else b
 cdef inline int int_max(int a, int b): return a if a > b else b
+cdef inline int int_abs(int x): return x if x > 0 else -x
 
 
 cdef extern from "math.h":
@@ -213,10 +214,12 @@ cdef inline int words_to_ids(list words, vector[int]& word_ids,
 
     return 0
 
-            
+
+# TODO: Parameterize distance weighting function...
 def construct_cooccurrence_matrix(corpus, dictionary, int supplied,
                                   int window_size, int ignore_missing,
-                                  int max_map_size):
+                                  int max_map_size,
+                                  int symmetric):
     """
     Construct the word-id dictionary and cooccurrence matrix for
     a given corpus, using a given window size.
@@ -254,9 +257,14 @@ def construct_cooccurrence_matrix(corpus, dictionary, int supplied,
             if outer_word == -1:
                 continue
 
+            if symmetric:
+                window_start = int_max(i - window_size, 0)
+            else:
+                window_start = i
+
             window_stop = int_min(i + window_size + 1, wordslen)
 
-            for j in range(i, window_stop):
+            for j in range(window_start, window_stop):
                 inner_word = word_ids[j]
 
                 if inner_word == -1:
@@ -266,15 +274,21 @@ def construct_cooccurrence_matrix(corpus, dictionary, int supplied,
                 if inner_word == outer_word:
                     continue
 
-                if inner_word < outer_word:
+                if symmetric:
                     matrix.increment(inner_word,
                                      outer_word,
-                                     1.0 / (j - i))
+                                     1.0 / int_abs(j - i))
+
                 else:
-                    matrix.increment(outer_word,
-                                     inner_word,
-                                     1.0 / (j - i))
-    
+                    if inner_word < outer_word:
+                        matrix.increment(inner_word,
+                                         outer_word,
+                                         1.0 / int_abs(j - i))
+                    else:
+                        matrix.increment(outer_word,
+                                         inner_word,
+                                         1.0 / int_abs(j - i))
+
     # Create the matrix.
     mat = matrix.to_coo(len(dictionary))
 
