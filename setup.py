@@ -27,7 +27,7 @@ extensions = [Extension("glove.glove_cython", ["glove/glove_cython.pyx"],
                         extra_compile_args=['-fopenmp']),
               Extension("glove.corpus_cython", ["glove/corpus_cython.pyx"],
                         language='C++',
-                        extra_compile_args=['-std=c++11', '-O3'])]
+                        extra_compile_args=['-std=c++0x', '-O3'])]
 
 setup(
     name='glove',
