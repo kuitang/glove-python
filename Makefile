@@ -1,5 +1,6 @@
 all:
 	python setup.py build_ext
+	python setup.py install
 
 get-wiki:
 	wget http://dumps.wikimedia.org/enwiki/20151201/enwiki-20151201-pages-meta-current1.xml-p000000010p000010000.bz2

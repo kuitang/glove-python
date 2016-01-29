@@ -27,7 +27,7 @@ class Glove(object):
         Parameters:
         - int no_components: number of latent dimensions
         - float learning_rate: learning rate for SGD estimation.
-        - float alpha, float max_count: parameters for the 
+        - float alpha, float max_count: parameters for the
           weighting function (see the paper).
         - float max_loss: the maximum absolute value of calculated
                           gradient for any single co-occurrence pair.
@@ -35,7 +35,7 @@ class Glove(object):
                           are experiencing problems with numerical
                           stability.
         """
-        
+
         self.no_components = no_components
         self.learning_rate = float(learning_rate)
         self.alpha = float(alpha)
@@ -74,7 +74,7 @@ class Glove(object):
         self.word_vectors = ((np.random.rand(shape[0],
                                              self.no_components) - 0.5)
                                              / self.no_components)
-        self.word_biases = np.zeros(shape[0], 
+        self.word_biases = np.zeros(shape[0],
                                     dtype=np.float64)
 
         self.vectors_sum_gradients = np.ones_like(self.word_vectors)
@@ -119,7 +119,7 @@ class Glove(object):
         (a paragraph vector).
 
         Experimental. This will return something close to a tf-idf
-        weighted average of constituent token vectors by fitting 
+        weighted average of constituent token vectors by fitting
         rare words (with low word bias values) more closely.
         """
 
@@ -131,7 +131,7 @@ class Glove(object):
                             'transform paragraphs')
 
         cooccurrence = collections.defaultdict(lambda: 0.0)
-            
+
         for token in paragraph:
             try:
                 cooccurrence[self.dictionary[token]] += self.max_count / 10.0
@@ -199,7 +199,7 @@ class Glove(object):
         """
         Load model from filename.
         """
-        
+
         instance = Glove()
 
         with open(filename, 'rb') as savefile:
@@ -219,7 +219,7 @@ class Glove(object):
 
         dct = {}
         vectors = array.array('d')
-        
+
         # Read in the data.
         with io.open(filename, 'r', encoding='utf-8') as savefile:
             for i, line in enumerate(savefile):
@@ -267,7 +267,7 @@ class Glove(object):
 
         if self.dictionary is None:
             raise Exception('No word dictionary supplied')
-        
+
         try:
             word_idx = self.dictionary[word]
         except KeyError:
@@ -283,3 +283,39 @@ class Glove(object):
         paragraph_vector = self.transform_paragraph(paragraph, **kwargs)
 
         return self._similarity_query(paragraph_vector, number)
+
+    def __contains__(self, item):
+        return item in self.dictionary
+
+    def _get_vec(self, word):
+        id = self.dictionary[word]
+        return self.word_vectors[id, :]
+
+    def sim(self, word_a, word_b):
+        """Return cosine similarity between word_a and word_b"""
+        v_a = self._get_vec(word_a)
+        v_b = self._get_vec(word_b)
+
+        return np.dot(v_a, v_b) / np.linalg.norm(v_a) / np.linalg.norm(v_b)
+
+    def predict_3cosadd(self, word_a, word_b, word_ap):
+        v_a = self._get_vec(word_a)
+        v_b = self._get_vec(word_b)
+        v_ap = self._get_vec(word_ap)
+
+        v_proto = v_b - v_a + v_ap
+
+        # Exclude the forbidden words
+        all_sims = (np.dot(self.word_vectors, v_proto)
+                    / np.linalg.norm(self.word_vectors, axis=1)
+                    / np.linalg.norm(v_proto))
+
+        tabu_ids = np.array([self.dictionary[word_a],
+                             self.dictionary[word_b],
+                             self.dictionary[word_ap]])
+        all_sims[tabu_ids] = -np.inf
+
+        id_max = np.argmax(all_sims)
+
+        return self.inverse_dictionary[id_max]
+

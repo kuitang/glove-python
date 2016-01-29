@@ -40,6 +40,9 @@ class Corpus(object):
         if np.min(list(dictionary.values())) != 0:
             raise Exception('Dictionary ids should start at zero')
 
+    def __contains__(self, item):
+        return item in self.dictionary
+
     def fit(self, corpus, window=10, max_map_size=1000, ignore_missing=False, symmetric=False):
         """
         Perform a pass through the corpus to construct
