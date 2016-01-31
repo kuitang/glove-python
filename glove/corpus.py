@@ -43,7 +43,7 @@ class Corpus(object):
     def __contains__(self, item):
         return item in self.dictionary
 
-    def fit(self, corpus, window=10, max_map_size=1000, ignore_missing=False, symmetric=False):
+    def fit(self, corpus, window=10, max_map_size=1000, ignore_missing=False, symmetric=False, inverse_weight=True):
         """
         Perform a pass through the corpus to construct
         the cooccurrence matrix. 
@@ -72,7 +72,8 @@ class Corpus(object):
                                                     int(window),
                                                     int(ignore_missing),
                                                     max_map_size,
-                                                    int(symmetric))
+                                                    int(symmetric),
+                                                    int(inverse_weight))
 
     def save(self, filename):
         

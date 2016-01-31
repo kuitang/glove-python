@@ -220,7 +220,8 @@ cdef inline int64_t words_to_ids(list words, vector[int64_t]& word_ids,
 def construct_cooccurrence_matrix(corpus, dictionary, int supplied,
                                   int window_size, int ignore_missing,
                                   int max_map_size,
-                                  int symmetric):
+                                  int symmetric,
+                                  int inverse_weight):
     """
     Construct the word-id dictionary and cooccurrence matrix for
     a given corpus, using a given window size.
@@ -240,6 +241,8 @@ def construct_cooccurrence_matrix(corpus, dictionary, int supplied,
     # Pre-allocate some reasonable size
     # for the word ids vector.
     word_ids.reserve(1000)
+
+    cdef double inc_value
 
     # Iterate over the corpus.
     for words in corpus:
@@ -275,20 +278,25 @@ def construct_cooccurrence_matrix(corpus, dictionary, int supplied,
                 if inner_word == outer_word:
                     continue
 
+                if inverse_weight:
+                    inc_value = 1.0 / int_abs(j - i)
+                else:
+                    inc_value = 1.0
+
                 if symmetric:
                     matrix.increment(inner_word,
                                      outer_word,
-                                     1.0 / int_abs(j - i))
+                                     inverse_weight)
 
                 else:
                     if inner_word < outer_word:
                         matrix.increment(inner_word,
                                          outer_word,
-                                         1.0 / int_abs(j - i))
+                                         inverse_weight)
                     else:
                         matrix.increment(outer_word,
                                          inner_word,
-                                         1.0 / int_abs(j - i))
+                                         inverse_weight)
 
     # Create the matrix.
     mat = matrix.to_coo(len(dictionary))
