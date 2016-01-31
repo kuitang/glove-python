@@ -12,6 +12,7 @@ from libcpp.unordered_map cimport unordered_map
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 from libcpp.vector cimport vector
+from libc.stdint cimport int64_t, int64_t
 
 
 cdef inline int int_min(int a, int b): return a if a <= b else b
@@ -29,31 +30,31 @@ cdef class Matrix:
     its data as a vector of maps.
     """
 
-    cdef int max_map_size
-    cdef vector[unordered_map[int, float]] rows
+    cdef int64_t max_map_size
+    cdef vector[unordered_map[int64_t, float]] rows
 
-    cdef vector[vector[int]] row_indices
+    cdef vector[vector[int64_t]] row_indices
     cdef vector[vector[float]] row_data
 
-    def __cinit__(self, int max_map_size):
+    def __cinit__(self, int64_t max_map_size):
 
         self.max_map_size = max_map_size
-        self.rows = vector[unordered_map[int, float]]()
+        self.rows = vector[unordered_map[int64_t, float]]()
 
-        self.row_indices = vector[vector[int]]()
+        self.row_indices = vector[vector[int64_t]]()
         self.row_data = vector[vector[float]]()
 
-    cdef void compactify_row(self, int row):
+    cdef void compactify_row(self, int64_t row):
         """
         Move a row from a map to more efficient
         vector storage.
         """
 
-        cdef int i, col
-        cdef int row_length = self.row_indices[row].size()
+        cdef int64_t i, col
+        cdef int64_t row_length = self.row_indices[row].size()
 
-        cdef pair[int, float] row_entry
-        cdef unordered_map[int, float].iterator row_iterator
+        cdef pair[int64_t, float] row_entry
+        cdef unordered_map[int64_t, float].iterator row_iterator
 
         row_unordered_map = self.rows[row]
 
@@ -88,15 +89,15 @@ cdef class Matrix:
         Add a new row to the matrix.
         """
 
-        cdef unordered_map[int, float] row_map
+        cdef unordered_map[int64_t, float] row_map
 
-        row_map = unordered_map[int, float]()
+        row_map = unordered_map[int64_t, float]()
 
         self.rows.push_back(row_map)
-        self.row_indices.push_back(vector[int]())
+        self.row_indices.push_back(vector[int64_t]())
         self.row_data.push_back(vector[float]())
 
-    cdef void increment(self, int row, int col, float value):
+    cdef void increment(self, int64_t row, int64_t col, float value):
         """
         Increment the value at (row, col) by value.
         """
@@ -111,13 +112,13 @@ cdef class Matrix:
         if self.rows[row].size() > self.max_map_size:
             self.compactify_row(row)
 
-    cdef int size(self):
+    cdef int64_t size(self):
         """
         Get number of nonzero entries.
         """
 
-        cdef int i
-        cdef int size = 0
+        cdef int64_t i
+        cdef int64_t size = 0
 
         for i in range(self.rows.size()):
             size += self.rows[i].size()
@@ -125,16 +126,16 @@ cdef class Matrix:
 
         return size
 
-    cpdef to_coo(self, int shape):
+    cpdef to_coo(self, int64_t shape):
         """
         Convert to a shape by shape COO matrix.
         """
 
-        cdef int i, j
-        cdef int row
-        cdef int col
-        cdef int rows = self.rows.size()
-        cdef int no_collocations
+        cdef int64_t i, j
+        cdef int64_t row
+        cdef int64_t col
+        cdef int64_t rows = self.rows.size()
+        cdef int64_t no_collocations
 
         # Transform all row maps to row arrays.
         for i in range(rows):
@@ -143,11 +144,11 @@ cdef class Matrix:
         no_collocations = self.size()
 
         # Create the constituent numpy arrays.
-        row_np = np.empty(no_collocations, dtype=np.int32)
-        col_np = np.empty(no_collocations, dtype=np.int32)
+        row_np = np.empty(no_collocations, dtype=np.int64)
+        col_np = np.empty(no_collocations, dtype=np.int64)
         data_np = np.empty(no_collocations, dtype=np.float64)
-        cdef int[:,] row_view = row_np
-        cdef int[:,] col_view = col_np
+        cdef int64_t[:,] row_view = row_np
+        cdef int64_t[:,] col_view = col_np
         cdef double[:,] data_view = data_np
 
         j = 0
@@ -174,10 +175,10 @@ cdef class Matrix:
         self.row_data.clear()
 
 
-cdef inline int words_to_ids(list words, vector[int]& word_ids,
-                      dictionary, int supplied, int ignore_missing):
+cdef inline int64_t words_to_ids(list words, vector[int64_t]& word_ids,
+                      dictionary, int64_t supplied, int64_t ignore_missing):
     """
-    Convert a list of words into a vector of word ids, using either
+    Convert a list of words int64_to a vector of word ids, using either
     the supplied dictionary or by consructing a new one.
 
     If the dictionary was supplied, a word is missing from it,
@@ -191,7 +192,7 @@ cdef inline int words_to_ids(list words, vector[int]& word_ids,
     filtered vocabulary).
     """
 
-    cdef int word_id
+    cdef int64_t word_id
 
     word_ids.resize(0)
 
@@ -234,7 +235,7 @@ def construct_cooccurrence_matrix(corpus, dictionary, int supplied,
     cdef list words
     cdef int i, j, outer_word, inner_word
     cdef int wordslen, window_stop, error
-    cdef vector[int] word_ids
+    cdef vector[int64_t] word_ids
 
     # Pre-allocate some reasonable size
     # for the word ids vector.
