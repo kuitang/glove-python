@@ -286,17 +286,17 @@ def construct_cooccurrence_matrix(corpus, dictionary, int supplied,
                 if symmetric:
                     matrix.increment(inner_word,
                                      outer_word,
-                                     inverse_weight)
+                                     inc_value)
 
                 else:
                     if inner_word < outer_word:
                         matrix.increment(inner_word,
                                          outer_word,
-                                         inverse_weight)
+                                         inc_value)
                     else:
                         matrix.increment(outer_word,
                                          inner_word,
-                                         inverse_weight)
+                                         inc_value)
 
     # Create the matrix.
     mat = matrix.to_coo(len(dictionary))
