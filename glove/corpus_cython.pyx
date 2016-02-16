@@ -1,4 +1,4 @@
-#!python
+#python
 #cython: boundscheck=False, wraparound=False, nonecheck=False, cdivision=True
 #distutils: language = c++
 
@@ -12,7 +12,7 @@ from libcpp.unordered_map cimport unordered_map
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 from libcpp.vector cimport vector
-from libc.stdint cimport int64_t, int64_t
+from libc.stdint cimport uint64_t, int64_t
 
 
 cdef inline int int_min(int a, int b): return a if a <= b else b
@@ -30,31 +30,31 @@ cdef class Matrix:
     its data as a vector of maps.
     """
 
-    cdef int64_t max_map_size
-    cdef vector[unordered_map[int64_t, float]] rows
+    cdef uint64_t max_map_size
+    cdef vector[unordered_map[uint64_t, double]] rows
 
-    cdef vector[vector[int64_t]] row_indices
-    cdef vector[vector[float]] row_data
+    cdef vector[vector[uint64_t]] row_indices
+    cdef vector[vector[double]] row_data
 
-    def __cinit__(self, int64_t max_map_size):
+    def __cinit__(self, uint64_t max_map_size):
 
         self.max_map_size = max_map_size
-        self.rows = vector[unordered_map[int64_t, float]]()
+        self.rows = vector[unordered_map[uint64_t, double]]()
 
-        self.row_indices = vector[vector[int64_t]]()
-        self.row_data = vector[vector[float]]()
+        self.row_indices = vector[vector[uint64_t]]()
+        self.row_data = vector[vector[double]]()
 
-    cdef void compactify_row(self, int64_t row):
+    cdef void compactify_row(self, uint64_t row):
         """
         Move a row from a map to more efficient
         vector storage.
         """
 
-        cdef int64_t i, col
-        cdef int64_t row_length = self.row_indices[row].size()
+        cdef uint64_t i, col
+        cdef uint64_t row_length = self.row_indices[row].size()
 
-        cdef pair[int64_t, float] row_entry
-        cdef unordered_map[int64_t, float].iterator row_iterator
+        cdef pair[uint64_t, double] row_entry
+        cdef unordered_map[uint64_t, double].iterator row_iterator
 
         row_unordered_map = self.rows[row]
 
@@ -89,20 +89,20 @@ cdef class Matrix:
         Add a new row to the matrix.
         """
 
-        cdef unordered_map[int64_t, float] row_map
+        cdef unordered_map[uint64_t, double] row_map
 
-        row_map = unordered_map[int64_t, float]()
+        row_map = unordered_map[uint64_t, double]()
 
         self.rows.push_back(row_map)
-        self.row_indices.push_back(vector[int64_t]())
-        self.row_data.push_back(vector[float]())
+        self.row_indices.push_back(vector[uint64_t]())
+        self.row_data.push_back(vector[double]())
 
-    cdef void increment(self, int64_t row, int64_t col, float value):
+    cdef void increment(self, uint64_t row, uint64_t col, double value):
         """
         Increment the value at (row, col) by value.
         """
 
-        cdef float current_value
+        cdef double current_value
 
         while row >= self.rows.size():
             self.add_row()        
@@ -112,13 +112,13 @@ cdef class Matrix:
         if self.rows[row].size() > self.max_map_size:
             self.compactify_row(row)
 
-    cdef int64_t size(self):
+    cdef uint64_t size(self):
         """
         Get number of nonzero entries.
         """
 
-        cdef int64_t i
-        cdef int64_t size = 0
+        cdef uint64_t i
+        cdef uint64_t size = 0
 
         for i in range(self.rows.size()):
             size += self.rows[i].size()
@@ -126,16 +126,16 @@ cdef class Matrix:
 
         return size
 
-    cpdef to_coo(self, int64_t shape):
+    cpdef to_coo(self, uint64_t shape):
         """
         Convert to a shape by shape COO matrix.
         """
 
-        cdef int64_t i, j
-        cdef int64_t row
-        cdef int64_t col
-        cdef int64_t rows = self.rows.size()
-        cdef int64_t no_collocations
+        cdef uint64_t i, j
+        cdef uint64_t row
+        cdef uint64_t col
+        cdef uint64_t rows = self.rows.size()
+        cdef uint64_t no_collocations
 
         # Transform all row maps to row arrays.
         for i in range(rows):
@@ -147,8 +147,8 @@ cdef class Matrix:
         row_np = np.empty(no_collocations, dtype=np.int64)
         col_np = np.empty(no_collocations, dtype=np.int64)
         data_np = np.empty(no_collocations, dtype=np.float64)
-        cdef int64_t[:,] row_view = row_np
-        cdef int64_t[:,] col_view = col_np
+        cdef uint64_t[:,] row_view = row_np
+        cdef uint64_t[:,] col_view = col_np
         cdef double[:,] data_view = data_np
 
         j = 0
@@ -175,8 +175,8 @@ cdef class Matrix:
         self.row_data.clear()
 
 
-cdef inline int64_t words_to_ids(list words, vector[int64_t]& word_ids,
-                      dictionary, int64_t supplied, int64_t ignore_missing):
+cdef inline int words_to_ids(list words, vector[uint64_t]& word_ids,
+                             dictionary, uint64_t supplied, uint64_t ignore_missing):
     """
     Convert a list of words int64_to a vector of word ids, using either
     the supplied dictionary or by consructing a new one.
@@ -205,7 +205,7 @@ cdef inline int64_t words_to_ids(list words, vector[int64_t]& word_ids,
             if word_id == -1 and ignore_missing == 0:
                 return -1
 
-            word_ids.push_back(word_id)
+            word_ids.push_back(<uint64_t> word_id)
 
     else:
         for word in words:
@@ -236,7 +236,7 @@ def construct_cooccurrence_matrix(corpus, dictionary, int supplied,
     cdef list words
     cdef int i, j, outer_word, inner_word
     cdef int wordslen, window_stop, error
-    cdef vector[int64_t] word_ids
+    cdef vector[uint64_t] word_ids
 
     # Pre-allocate some reasonable size
     # for the word ids vector.
@@ -261,11 +261,7 @@ def construct_cooccurrence_matrix(corpus, dictionary, int supplied,
             if outer_word == -1:
                 continue
 
-            if symmetric:
-                window_start = int_max(i - window_size, 0)
-            else:
-                window_start = i
-
+            window_start = i + 1
             window_stop = int_min(i + window_size + 1, wordslen)
 
             for j in range(window_start, window_stop):
@@ -274,18 +270,31 @@ def construct_cooccurrence_matrix(corpus, dictionary, int supplied,
                 if inner_word == -1:
                     continue
 
-                # Do nothing if the words are the same.
-                if inner_word == outer_word:
-                    continue
+                # Kui Tang, 15 Feb 2016: The old code
+                #
+                # if inner_word == outer_word:
+                #     continue
+                #
+                # is incorrect. We *want* to count words on the diagonal if they occur
+                # in different postitions. The case we want to avoid is when j == i, NOT
+                # when the words in position i and j are equal. For instance, the sentence
+                #
+                # "the cat in the hat"
+                #
+                # requires counting a (the, the) co-occurence twice, for the 'the's in
+                # 0th and 3rd positions.
 
                 if inverse_weight:
-                    inc_value = 1.0 / int_abs(j - i)
+                    inc_value = 1.0 / (<double>(j - i))
                 else:
                     inc_value = 1.0
 
                 if symmetric:
                     matrix.increment(inner_word,
                                      outer_word,
+                                     inc_value)
+                    matrix.increment(outer_word,
+                                     inner_word,
                                      inc_value)
 
                 else:
