@@ -144,8 +144,8 @@ cdef class Matrix:
         no_collocations = self.size()
 
         # Create the constituent numpy arrays.
-        row_np = np.empty(no_collocations, dtype=np.int64)
-        col_np = np.empty(no_collocations, dtype=np.int64)
+        row_np = np.empty(no_collocations, dtype=np.uint64)
+        col_np = np.empty(no_collocations, dtype=np.uint64)
         data_np = np.empty(no_collocations, dtype=np.float64)
         cdef uint64_t[:,] row_view = row_np
         cdef uint64_t[:,] col_view = col_np
